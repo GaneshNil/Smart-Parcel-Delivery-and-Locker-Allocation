@@ -1,6 +1,6 @@
 # ParcelFlow — Smart Parcel Delivery and Locker Allocation
 
-ParcelFlow is a command-line mini-project for Semester III Data Structures (CE302). You can register parcels, assign lockers, plan delivery stops, and dispatch parcels in the order they were queued. All seven experiments run in a single 393-line Python file.
+ParcelFlow is a command-line mini-project for Semester III Data Structures (CE302). You can register parcels, assign lockers, plan delivery stops, and dispatch parcels in the order they were queued. All seven experiments run in a single Python file.
 
 ## Run the app
 
@@ -10,7 +10,7 @@ Open a terminal in the project directory and run the following command. You need
 python3 main.py
 ```
 
-Enter one command at each `>` prompt. Use `list` to see all parcels and `exit` to save and close the app. On startup, ParcelFlow reloads parcel records, locker assignments, routes, and queue order from `data/parcels.json` if it exists.
+Enter one command at each `parcelflow>` prompt. The command guide appears at startup. Type `list` to see all parcels or `exit` to save and close the app. On startup, ParcelFlow reloads parcel records, locker assignments, routes, and queue order from `data/parcels.json` if it exists.
 
 ## Demo
 

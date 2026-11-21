@@ -1,19 +1,15 @@
 import json
 from math import isfinite
 from pathlib import Path
-
 DATA = Path(__file__).resolve().parent / "data" / "parcels.json"
 DONE = ("Delivered", "Cancelled")
 AREAS = ("Kothrud", "Karve Nagar", "Deccan", "Shivajinagar", "Baner",
          "Wakad", "Hadapsar", "Viman Nagar", "Katraj", "Hinjewadi")
-
 # Lab 1: searching
 def linear_search(records, parcel_id):
     for parcel in records:
         if parcel["parcel_id"] == parcel_id:
             return parcel
-
-
 def binary_search(records, parcel_id):
     left, right = 0, len(records) - 1
     while left <= right:
@@ -31,22 +27,18 @@ def binary_search(records, parcel_id):
 def quick_sort(records):
     if len(records) < 2:
         return records[:]
-
     # Keep equal IDs together so only the smaller and larger groups recurse.
     pivot = records[len(records) // 2]["parcel_id"]
     before = [p for p in records if p["parcel_id"] < pivot]
     equal = [p for p in records if p["parcel_id"] == pivot]
     after = [p for p in records if p["parcel_id"] > pivot]
     return quick_sort(before) + equal + quick_sort(after)
-
-
 def merge_sort(records):
     if len(records) < 2:
         return records[:]
     middle = len(records) // 2
     left = merge_sort(records[:middle])
     right = merge_sort(records[middle:])
-
     merged = []
     i = j = 0
     while i < len(left) and j < len(right):
@@ -57,7 +49,6 @@ def merge_sort(records):
         else:
             merged.append(right[j])
             j += 1
-
     # One half may still have records left after the other runs out.
     return merged + left[i:] + right[j:]
 
@@ -67,7 +58,6 @@ class Node:
         self.value = value
         self.next = None
 
-
 # Stops and the queue end at None. Routes link the tail back to the head.
 class Chain:
     def __init__(self, values=(), circular=False):
@@ -75,7 +65,6 @@ class Chain:
         self.circular = circular
         for value in values:
             self.append(value)
-
     def append(self, value):
         node = Node(value)
         if self.tail:
@@ -85,7 +74,6 @@ class Chain:
         self.tail = node
         if self.circular:
             node.next = self.head
-
     def remove(self, value):
         previous, node = None, self.head
         for item in self.values():
@@ -96,7 +84,6 @@ class Chain:
                     previous.next = following
                 else:
                     self.head = following
-
                 # Repair the tail and route cursor if either pointed at the removed node.
                 if node is self.tail:
                     self.tail = previous
@@ -106,7 +93,6 @@ class Chain:
                     self.current = following
                 return value
             previous, node = node, node.next
-
     def values(self, start=None):
         first = start or self.head
         node = first
@@ -116,14 +102,12 @@ class Chain:
             if node is first:  # Stop after one pass around a circular route.
                 break
 
-
 # Lab 9: separate chaining. A bucket holds references to parcel records.
 def bucket_for(buckets, parcel_id):
     index = 0
     for letter in parcel_id:
         index = (index * 31 + ord(letter)) % len(buckets)
     return buckets[index]
-
 
 def register(buckets, records, parcel_id, name, contact, destination, weight):
     bucket = bucket_for(buckets, parcel_id)
@@ -133,7 +117,6 @@ def register(buckets, records, parcel_id, name, contact, destination, weight):
         raise ValueError("Enter a name, destination and 7–15 digit contact number.")
     if not isfinite(weight) or weight <= 0:
         raise ValueError("Enter a positive, finite weight.")
-
     # The registry and the bucket share the same parcel record.
     parcel = dict(
         parcel_id=parcel_id, recipient=name, contact=contact, destination=destination,
@@ -147,7 +130,6 @@ def register(buckets, records, parcel_id, name, contact, destination, weight):
 def store(parcel, grid, coordinates):
     if parcel["status"] != "Registered":
         raise ValueError("Only registered parcels can be stored.")
-
     # Try lockers row by row unless the user supplies one position.
     choices = (
         (row, column) for row in range(1, 11) for column in range(1, 11)
@@ -159,16 +141,13 @@ def store(parcel, grid, coordinates):
             break
     else:
         raise ValueError("Locker unavailable. Use row and column from 1 to 10.")
-
     # The user counts from 1. Python list indexes start at 0.
     grid[row - 1][column - 1] = 1
     parcel.update(locker=(row, column), status="Stored")
 
-
 def enqueue(parcel, queue, stops, routes):
     if parcel["status"] != "Stored":
         raise ValueError("Only stored parcels can be queued.")
-
     # Use an existing route that serves this destination, or add it to Route A.
     destination = parcel["destination"]
     for name, route in routes.items():
@@ -177,21 +156,22 @@ def enqueue(parcel, queue, stops, routes):
     else:
         name = "Route A"
         routes.setdefault(name, Chain(["Distribution Hub"], circular=True)).append(destination)
-
     # Append at the tail so earlier parcels are dispatched first.
     parcel.update(status="Queued", route=name)
     queue.append(parcel["parcel_id"])
     if parcel["parcel_id"] not in stops.values():
         stops.append(parcel["parcel_id"])
-
-
 def show(records):
-    header = "ID | Recipient | Contact | Destination | kg | Status | Locker | Route"
-    print(header if records else "No parcels found.")
-    for p in records:
-        print("{parcel_id} | {recipient} | {contact} | {destination} | {weight} | "
-              "{status} | {locker} | {route}".format(**p))
-
+    if not records:
+        print("No parcels found.")
+        return
+    rows = [("ID", "Recipient", "Contact", "Destination", "kg", "Status", "Locker", "Route")]
+    fields = ("parcel_id", "recipient", "contact", "destination", "weight", "status", "locker", "route")
+    for parcel in records:
+        rows.append(tuple(str(parcel[field]) if parcel[field] is not None else "—" for field in fields))
+    widths = [max(map(len, column)) for column in zip(*rows)]
+    for row in rows:
+        print("  ".join(value.ljust(width) for value, width in zip(row, widths)).rstrip())
 
 def main(path=DATA):
     content = path.read_text(encoding="utf-8") if path.exists() else ""
@@ -199,7 +179,6 @@ def main(path=DATA):
         data = json.loads(content)
     else:
         data = dict(parcels=[], stops=[], queue=[], routes=[])
-
     # Rebuild the linked structures from the order saved in JSON.
     records = data["parcels"]
     stops, queue = Chain(data["stops"]), Chain(data["queue"])
@@ -211,7 +190,6 @@ def main(path=DATA):
             if location == entry["current"]:
                 break
             route.current = route.current.next
-
     # Rebuild the hash index and locker grid from the parcel records.
     buckets = [[] for _ in range(13)]
     grid = [[0] * 10 for _ in range(10)]
@@ -226,59 +204,77 @@ def main(path=DATA):
             if not (1 <= row <= 10 and 1 <= column <= 10) or grid[row - 1][column - 1]:
                 raise ValueError("Invalid locker in saved data.")
             grid[row - 1][column - 1] = 1
-
     queued_ids = [p["parcel_id"] for p in records if p["status"] == "Queued" and p["locker"]]
     saved_queue = list(queue.values())
     if set(saved_queue) != set(queued_ids) or len(saved_queue) != len(queued_ids):
         raise ValueError("Invalid dispatch queue in saved data.")
-
-    print("""ParcelFlow commands
-register ID | list | search ID | quick | merge | hash ID | buckets
-grid | store ID [row col] | release ID | queue | peek | enqueue ID | dispatch
-deliver ID | cancel ID | delete ID | stops | addstop ID | removestop ID | findstop ID
-routes | route NAME | next NAME | cycle NAME | addloc NAME / LOCATION
-remloc NAME / LOCATION | samples | exit""")
-
+    commands = {
+        "Parcels": "register P101=Register a parcel|list=Show all parcels|search P101=Compare linear and binary search",
+        "Sorting": "quick=Sort by parcel ID|merge=Sort by destination",
+        "Lockers": "grid=Show available lockers|store P101 [row col]=Assign a locker|release P101=Free a locker",
+        "Dispatch": "enqueue P101=Add to queue|queue=Show dispatch order|peek=Show next parcel|dispatch=Send next parcel",
+        "Parcel status": "deliver P101=Mark as delivered|cancel P101=Cancel before dispatch|delete P101=Delete a closed record",
+        "Delivery stops": "stops=Show stops|addstop P101=Add a stop|findstop P101=Find a stop|removestop P101=Remove a stop",
+        "Routes": "routes=List routes|route Route A=Show locations|next Route A=Advance to next location|cycle Route A=Show full loop",
+        "Route changes": "addloc Route A / Baner=Add a location|remloc Route A / Baner=Remove a location",
+        "Hash lookup": "hash P101=Find a parcel by ID|buckets=Show hash collisions",
+        "App": "samples=Load demo data|exit=Save and close",
+    }
+    guide = "\nParcelFlow — Command guide\n" + "=" * 54 + "\n"
+    for section, entries in commands.items():
+        guide += f"\n{section.upper()}\n"
+        for entry in entries.split("|"):
+            example, description = entry.split("=")
+            guide += f"  {example:<24} {description}\n"
+    guide += "\nUse your own parcel ID. Example: store P101 3 5 (row 3, column 5).\n"
+    print(guide)
     while True:
         try:
-            command, _, argument = input("> ").strip().partition(" ")
+            command, _, argument = input("parcelflow> ").strip().partition(" ")
+            command = command.lower()
             if command == "exit":
                 break
-
+            if not command:
+                continue
             words = argument.upper().split()
             parcel_id = words[0] if words else "-"
             coordinates = words[1:]
             bucket = bucket_for(buckets, parcel_id)
             parcel = linear_search(bucket, parcel_id)
-
             if command == "register":
                 name = input("Recipient: ").strip()
-                contact = input("Contact: ").strip()
+                contact = input("Contact number (7–15 digits): ").strip()
                 destination = input("Destination: ").strip()
-                weight = float(input("kg: "))
+                weight = float(input("Parcel weight in kg (e.g. 2.5): "))
                 register(buckets, records, parcel_id, name, contact, destination, weight)
+                print(f"Registered {parcel_id}. Next: store {parcel_id}")
             elif command in ("list", "quick", "merge"):
                 sorters = {"quick": quick_sort, "merge": merge_sort}
                 sort = sorters.get(command, list)
                 show(sort(records))
             elif command in ("search", "hash"):
                 if command == "search":
-                    print("Linear:", bool(linear_search(records, parcel_id)))
+                    found = linear_search(records, parcel_id)
+                    print("Linear search:", "Found" if found else "No match")
                     # Binary search needs sorted IDs. Quick Sort returns a copy.
                     parcel = binary_search(quick_sort(records), parcel_id)
+                    print("Binary search:", "Found" if parcel else "No match")
                 show([parcel] if parcel else [])
             elif command == "buckets":
                 for i, chain in enumerate(buckets):
                     ids = [p["parcel_id"] for p in chain]
                     extra = max(0, len(chain) - 1)
-                    print(i, ids, "collisions:", extra)
+                    print(f"Bucket {i:2} | {', '.join(ids) or 'Empty'} | Collisions: {extra}")
                 print(f"Load factor: {len(records) / len(buckets):.2f}")
             elif command == "grid":
-                for row in grid:
-                    print(*row)
+                print("Row   " + " ".join(f"{column:2}" for column in range(1, 11)))
+                for number, row in enumerate(grid, 1):
+                    print(f"{number:3}   " + " ".join(" X" if cell else " ." for cell in row))
+                print(". Free   X Occupied")
                 occupied = sum(sum(row) for row in grid)
                 print("Occupied:", occupied, "Available:", 100 - occupied)
             elif command == "samples":
+                previous_count = len(records)
                 for i in range(20):
                     key = f"P{101 + i}"
                     if not linear_search(bucket_for(buckets, key), key):
@@ -289,13 +285,15 @@ remloc NAME / LOCATION | samples | exit""")
                         if sum(sum(row) for row in grid) < 100:
                             store(sample, grid, [])
                             enqueue(sample, queue, stops, routes)
+                print(f"Sample parcels added: {len(records) - previous_count}. Type list to view them.")
             elif command in ("routes", "queue", "stops", "peek"):
                 first = [queue.head.value] if queue.head else []
                 views = {
                     "routes": routes, "queue": queue.values(),
                     "stops": stops.values(), "peek": first,
                 }
-                print(*views[command])
+                labels = {"routes": "Routes", "queue": "Dispatch order", "stops": "Stops", "peek": "Next parcel"}
+                print(f"{labels[command]}: " + (" → ".join(views[command]) or "None"))
             elif command in ("route", "next", "cycle", "addloc", "remloc"):
                 name, _, location = argument.partition("/")
                 name = name.strip()
@@ -306,6 +304,7 @@ remloc NAME / LOCATION | samples | exit""")
                     route = routes.setdefault(name, Chain(circular=True))
                     if location not in route.values():
                         route.append(location)
+                    print(f"{name}: " + " → ".join(route.values()))
                 elif name not in routes:
                     print("Route not found.")
                 elif command == "remloc":
@@ -333,14 +332,16 @@ remloc NAME / LOCATION | samples | exit""")
                 row, column = parcel["locker"]
                 grid[row - 1][column - 1] = 0
                 parcel.update(locker=None, status="Dispatched")
-                print("Dispatched:", next_id)
+                print(f"Dispatched: {next_id}. Locker ({row}, {column}) is now free.")
             elif command in ("store", "enqueue", "release", "cancel", "deliver", "delete",
                              "addstop", "removestop", "findstop") and parcel:
                 status = parcel["status"]
                 if command == "store":
                     store(parcel, grid, coordinates)
+                    print(f"Stored {parcel_id} in locker {parcel['locker']}. Next: enqueue {parcel_id}")
                 elif command == "enqueue":
                     enqueue(parcel, queue, stops, routes)
+                    print(f"Queued {parcel_id} on {parcel['route']}.")
                 elif command == "findstop":
                     print("Found." if parcel_id in stops.values() else "Stop not found.")
                 elif (
@@ -368,26 +369,25 @@ remloc NAME / LOCATION | samples | exit""")
                         parcel.update(status="Cancelled", route=None)
                 else:
                     raise ValueError("Action unavailable for this status.")
+                if command not in ("store", "enqueue", "findstop"):
+                    print(f"Done: {command} {parcel_id}")
             else:
-                raise ValueError("Unknown command or parcel.")
+                raise ValueError("Check the command and parcel ID against the startup guide.")
         except ValueError as error:
-            print(error)
+            print(f"Could not complete command: {error}")
         except (EOFError, KeyboardInterrupt):
             break
-
     # Save values and their order. The node links are rebuilt on the next run.
     saved_routes = []
     for name, route in routes.items():
         current = route.current.value if route.current else None
         saved_routes.append(dict(name=name, locations=list(route.values()), current=current))
     data.update(stops=list(stops.values()), queue=list(queue.values()), routes=saved_routes)
-
     path.parent.mkdir(exist_ok=True)
     # Write the new file before replacing the last saved copy.
     temporary = path.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(data, indent=2), encoding="utf-8")
     temporary.replace(path)
-
-
+    print("Parcel data saved. Goodbye!")
 if __name__ == "__main__":
     main()
