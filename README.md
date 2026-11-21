@@ -1,16 +1,20 @@
 # ParcelFlow — Smart Parcel Delivery and Locker Allocation
 
-ParcelFlow is an offline Python mini-project for Semester III Data Structures (CE302). All application code is in `main.py`. Run it from this directory with Python 3.8 or later.
+ParcelFlow is a command-line mini-project for Semester III Data Structures (CE302). You can register parcels, assign lockers, plan delivery stops, and dispatch parcels in the order they were queued. All seven experiments run in a single 393-line Python file.
+
+## Run the app
+
+Open a terminal in the project directory and run the following command. You need Python 3.8 or later. The app runs offline and uses only the Python standard library.
 
 ```sh
 python3 main.py
 ```
 
-Type commands at the prompt. Use `samples` to add 20 fictional parcels, or type `register P999` and enter the requested details. Sample IDs already in the registry are skipped. Use `exit` to save to `data/parcels.json`. The app reads the same JSON format as the earlier version.
+Enter one command at each `>` prompt. Use `list` to see all parcels and `exit` to save and close the app. On startup, ParcelFlow reloads parcel records, locker assignments, routes, and queue order from `data/parcels.json` if it exists.
 
 ## Demo
 
-On an empty registry, enter these commands in order.
+On an empty registry, enter the commands below. `samples` adds 20 fictional parcels and skips sample IDs already in the registry.
 
 ```text
 samples
@@ -31,7 +35,14 @@ exit
 
 The dispatch prints `Dispatched: P101`, the next parcel is `P103`, and the grid shows 18 occupied lockers. Restart the app and use `peek` to confirm the queue was saved.
 
-For a new parcel, use `store P999` to choose the first free locker or `store P999 3 5` to choose a specific locker. Then use `enqueue P999`. Enqueuing adds a delivery stop and assigns a route. New destinations join Route A by default. Dispatch and cancellation release the parcel's locker.
+## Manage a parcel
+
+1. Enter `register P999`. Provide the recipient's name, a 7–15 digit contact number, the destination, and a positive weight in kilograms.
+2. Enter `store P999` to use the first free locker, or `store P999 3 5` to choose row 3, column 5. Rows and columns range from 1 to 10.
+3. Enter `enqueue P999` to add the parcel to the dispatch queue and delivery stops. If no route already serves its destination, ParcelFlow adds the destination to Route A.
+4. Use `peek` to see which parcel is next and `dispatch` to send it out and free its locker. Once P999 has been dispatched, enter `deliver P999`.
+
+Use `release ID` to free a stored parcel's locker and return it to Registered status. Use `cancel ID` before dispatch to free its locker and remove it from the queue and stops. Use `delete ID` to remove a delivered or cancelled record.
 
 ## Seven experiments
 
@@ -45,4 +56,8 @@ For a new parcel, use `store P999` to choose the first free locker or `store P99
 | 7 | Linked FIFO dispatch queue | `enqueue ID`, `queue`, `peek`, `dispatch` |
 | 9 | Hash table with separate chaining | `hash ID`, `buckets`, `delete ID` for completed or cancelled records |
 
-See the [viva guide](VIVA.md) for the implementation and complexity of each experiment.
+## Project files
+
+- [main.py](main.py) contains the CLI, parcel workflow, and seven data structure experiments.
+- [VIVA.md](VIVA.md) explains how each experiment works and gives its time and space complexity.
+- `data/parcels.json` is created when you save.
